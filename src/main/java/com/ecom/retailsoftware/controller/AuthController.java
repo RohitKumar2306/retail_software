@@ -3,6 +3,7 @@ package com.ecom.retailsoftware.controller;
 
 import com.ecom.retailsoftware.io.AuthRequest;
 import com.ecom.retailsoftware.io.AuthResponse;
+import com.ecom.retailsoftware.service.UserService;
 import com.ecom.retailsoftware.service.impl.AppUserDetailsService;
 import com.ecom.retailsoftware.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final AppUserDetailsService appUserDetailsService;
+    private final UserService userService;
     private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
@@ -34,9 +36,8 @@ public class AuthController {
         authenticate(authRequest.getEmail(), authRequest.getPassword());
         final UserDetails userDetails = appUserDetailsService.loadUserByUsername(authRequest.getEmail());
         final String jwtToken = jwtUtil.generateToken(userDetails);
-
-        //TODO: Fetch the role from repository
-        return new AuthResponse(authRequest.getEmail(), "USER", jwtToken);
+        String role = userService.getUserRole(authRequest.getEmail());
+        return new AuthResponse(authRequest.getEmail(), role, jwtToken);
 
     }
 
