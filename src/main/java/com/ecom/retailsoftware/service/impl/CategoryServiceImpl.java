@@ -4,6 +4,7 @@ import com.ecom.retailsoftware.entity.CategoryEntity;
 import com.ecom.retailsoftware.io.CategoryRequest;
 import com.ecom.retailsoftware.io.CategoryResponse;
 import com.ecom.retailsoftware.repository.CategoryRepository;
+import com.ecom.retailsoftware.repository.ItemRepository;
 import com.ecom.retailsoftware.service.CategoryService;
 import com.ecom.retailsoftware.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
 
     private final FileUploadService fileUploadService;
+    private final ItemRepository itemRepository;
 
     @Override
     public CategoryResponse add(CategoryRequest request, MultipartFile file) {
@@ -52,7 +54,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     private CategoryResponse convertToResponse(CategoryEntity newCategory) {
-
+        Integer itemsCount = itemRepository.countByCategoryId(newCategory.getId());
         return CategoryResponse.builder()
                 .categoryId(newCategory.getCategoryId())
                 .name(newCategory.getName())
@@ -61,6 +63,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .imageUrl(newCategory.getImageUrl())
                 .createdAt(newCategory.getCreatedAt())
                 .updatedAt(newCategory.getUpdatedAt())
+                .items(itemsCount)
                 .build();
     }
 

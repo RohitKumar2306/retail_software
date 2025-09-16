@@ -37,7 +37,7 @@ public class AuthController {
         final UserDetails userDetails = appUserDetailsService.loadUserByUsername(authRequest.getEmail());
         final String jwtToken = jwtUtil.generateToken(userDetails);
         String role = userService.getUserRole(authRequest.getEmail());
-        return new AuthResponse(authRequest.getEmail(), role, jwtToken);
+        return new AuthResponse(authRequest.getEmail(), jwtToken, role);
 
     }
 
