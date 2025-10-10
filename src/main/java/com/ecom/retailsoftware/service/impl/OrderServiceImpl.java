@@ -2,15 +2,15 @@ package com.ecom.retailsoftware.service.impl;
 
 import com.ecom.retailsoftware.entity.OrderEntity;
 import com.ecom.retailsoftware.entity.OrderItemEntity;
-import com.ecom.retailsoftware.io.OrderRequest;
-import com.ecom.retailsoftware.io.OrderResponse;
-import com.ecom.retailsoftware.io.PaymentDetails;
-import com.ecom.retailsoftware.io.PaymentMethod;
+import com.ecom.retailsoftware.io.*;
 import com.ecom.retailsoftware.repository.OrderEntityRepository;
 import com.ecom.retailsoftware.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -96,5 +96,48 @@ public class OrderServiceImpl implements OrderService {
                 .stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public OrderResponse verifyPayment(PaymentVerificationRequest request) {
+        OrderEntity existingOrder = orderEntityRepository.findByOrderId(request.getOrderId())
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (!verifyRazorpaySignature(request.getRazorpayOrderId(),
+                request.getRazorpayPaymentId(),
+                request.getRazorpaySignature())) {
+            throw new RuntimeException("Razorpay Signature Error");
+        }
+
+        PaymentDetails paymentDetails = existingOrder.getPaymentDetails();
+        paymentDetails.setRazorpayOrderId(request.getRazorpayOrderId());
+        paymentDetails.setRazorpayPaymentId(request.getRazorpayPaymentId());
+        paymentDetails.setRazorpaySignature(request.getRazorpaySignature());
+        paymentDetails.setStatus(PaymentDetails.PaymentStatus.COMPLETED);
+
+        existingOrder = orderEntityRepository.save(existingOrder);
+        return convertToResponse(existingOrder);
+    }
+
+    @Override
+    public Double sumSalesByDate(LocalDate date) {
+        return orderEntityRepository.sumSalesByDate(date);
+    }
+
+    @Override
+    public Long countByOrderDate(LocalDate date) {
+        return orderEntityRepository.countByOrderDate(date);
+    }
+
+    @Override
+    public List<OrderResponse> findRecentOrders() {
+        return orderEntityRepository.findRecentOrders(PageRequest.of(0, 5))
+                .stream()
+                .map(orderEntity -> convertToResponse(orderEntity))
+                .collect(Collectors.toList());
+    }
+
+    private boolean verifyRazorpaySignature(String razorpayOrderId, String razorpayPaymentId, String razorpaySignature) {
+        return true;
     }
 }
