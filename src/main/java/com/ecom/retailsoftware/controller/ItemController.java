@@ -33,6 +33,21 @@ public class ItemController {
         }
     }
 
+    /*@ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/admin/items/update/{itemId}")
+    public ItemResponse updateItem(@PathVariable String itemId,
+                                   @RequestPart("item") String item) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ItemRequest itemRequest = null;
+        try {
+            itemRequest = objectMapper.readValue(item, ItemRequest.class);
+            itemRequest.setItemId(itemId);
+            return itemService.update(itemRequest);
+        } catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }*/
+
     @GetMapping("/items")
     public List<ItemResponse> readItems() {
         return itemService.fetchAll();

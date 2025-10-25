@@ -32,6 +32,7 @@ public class OrderEntity {
     private Double tax;
     private Double grandTotal;
     private LocalDateTime createdAt;
+    private String userName;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "order_id")

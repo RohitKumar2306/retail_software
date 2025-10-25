@@ -1,14 +1,20 @@
 package com.ecom.retailsoftware.service.impl;
 
+import com.ecom.retailsoftware.entity.ItemEntity;
 import com.ecom.retailsoftware.entity.OrderEntity;
 import com.ecom.retailsoftware.entity.OrderItemEntity;
 import com.ecom.retailsoftware.io.*;
+import com.ecom.retailsoftware.repository.ItemRepository;
 import com.ecom.retailsoftware.repository.OrderEntityRepository;
 import com.ecom.retailsoftware.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,10 +25,27 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl implements OrderService {
 
     private final OrderEntityRepository orderEntityRepository;
+    private final ItemRepository itemRepository;
 
     @Override
+    @Transactional
     public OrderResponse createOrder(OrderRequest request) {
+
+        for (OrderRequest.OrderItemRequest it : request.getCartItems()) {
+            int updated = itemRepository.reserveStock(it.getItemId(), it.getQuantity());
+            if (updated == 0) {
+                throw new IllegalStateException("Can't reserve " + it.getItemId() + " " + it.getQuantity());
+            }
+        }
+
         OrderEntity newOrder = convertToOrderEntity(request);
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = (auth != null ? auth.getName() : null);
+        if (currentUserEmail == null || currentUserEmail.isBlank()) {
+            throw new AccessDeniedException("Unauthenticated user");
+        }
+        newOrder.setUserName(currentUserEmail);
 
         PaymentDetails paymentDetails = new PaymentDetails();
         paymentDetails.setStatus(newOrder.getPaymentMethod() == PaymentMethod.CASH ?
@@ -134,6 +157,15 @@ public class OrderServiceImpl implements OrderService {
         return orderEntityRepository.findRecentOrders(PageRequest.of(0, 5))
                 .stream()
                 .map(orderEntity -> convertToResponse(orderEntity))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrderResponse> getLatestOrdersForCustomer(String customerName) {
+        return orderEntityRepository
+                .findAllByCustomerNameIgnoreCaseOrderByCreatedAtDesc(customerName)
+                .stream()
+                .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 

@@ -14,4 +14,9 @@ public interface ItemService {
 
     void deleteItem(String itemId);
 
+    ItemResponse update(ItemRequest request);
+
+    List<ItemResponse> getLowStockItems(Integer threshold);
+
+    List<ItemResponse> getOutOfStockItems();
 }

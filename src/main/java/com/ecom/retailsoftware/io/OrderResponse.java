@@ -26,7 +26,6 @@ public class OrderResponse {
     private LocalDateTime createdAt;
     private PaymentDetails paymentDetails;
 
-
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

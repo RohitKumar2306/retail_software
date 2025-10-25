@@ -29,12 +29,11 @@ public class ItemEntity {
 
     @Column(unique = true)
     private String itemId;
-
     private String name;
-
     private BigDecimal price;
-
     private String description;
+    private Integer stockQuantity = 0;
+    private Integer lowStockThreshold = 5;
 
     @CreationTimestamp
     @Column(updatable = false)

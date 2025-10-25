@@ -2,12 +2,12 @@ package com.ecom.retailsoftware.controller;
 
 
 import com.ecom.retailsoftware.io.DashboardResponse;
+import com.ecom.retailsoftware.io.ItemResponse;
 import com.ecom.retailsoftware.io.OrderResponse;
+import com.ecom.retailsoftware.service.ItemService;
 import com.ecom.retailsoftware.service.OrderService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,6 +18,7 @@ import java.util.List;
 public class DashboardController {
 
     private final OrderService orderService;
+    private final ItemService itemService;
 
     @GetMapping
     public DashboardResponse getDashboard() {
@@ -31,5 +32,16 @@ public class DashboardController {
                 recentOrders
         );
     }
+
+    @GetMapping("/lowStock")
+    public List<ItemResponse> getLowStockItems() {
+        return itemService.getLowStockItems(5);
+    }
+
+    @GetMapping("/outOfStock")
+    public List<ItemResponse> getOutOfStockItems() {
+        return itemService.getOutOfStockItems();
+    }
+
 
 }

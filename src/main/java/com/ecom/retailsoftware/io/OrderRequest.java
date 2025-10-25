@@ -22,7 +22,6 @@ public class OrderRequest {
     private Double grandTotal;
     private String paymentMethod;
 
-
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

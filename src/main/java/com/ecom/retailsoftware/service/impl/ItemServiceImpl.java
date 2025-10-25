@@ -43,6 +43,58 @@ public class ItemServiceImpl implements ItemService {
 
     }
 
+    @Override
+    public ItemResponse update(ItemRequest request) {
+        // 1) Find existing item
+        ItemEntity existing = itemRepository.findByItemId(request.getItemId())
+                .orElseThrow(() -> new RuntimeException("Item not found: " + request.getItemId()));
+
+        // 2) Apply updates (only when provided)
+        if (request.getDescription() != null) {
+            existing.setDescription(request.getDescription());
+        }
+        if (request.getPrice() != null) {
+            existing.setPrice(request.getPrice());
+        }
+        if (request.getLowStockThreshold() != null) {
+            existing.setLowStockThreshold(request.getLowStockThreshold());
+        }
+        if (request.getStockQuantity() != null) {
+            if (request.getStockQuantity() < 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stockQuantity must be >= 0");
+            }
+            existing.setStockQuantity(request.getStockQuantity());
+        }
+        if (request.getCategoryId() != null) {
+            CategoryEntity category = categoryRepository.findByCategoryId(request.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found: " + request.getCategoryId()));
+            existing.setCategory(category);
+        }
+
+        // 3) Persist
+        existing = itemRepository.save(existing);
+
+        // 4) Map to response (your existing helper)
+        return convertToResponse(existing);
+    }
+
+    @Override
+    public List<ItemResponse> getLowStockItems(Integer threshold) {
+        int t = (threshold != null ? threshold : 5);
+        return itemRepository.findByStockQuantityLessThanEqualOrderByStockQuantityAsc(t)
+                .stream()
+                .map(this::convertToResponse)
+                .toList();
+    }
+
+    @Override
+    public List<ItemResponse> getOutOfStockItems() {
+        return itemRepository.findByStockQuantityOrderByNameAsc(0)
+                .stream()
+                .map(this::convertToResponse)
+                .toList();
+    }
+
     private ItemEntity convertToEntity(ItemRequest request) {
 
         return ItemEntity.builder()
@@ -50,6 +102,8 @@ public class ItemServiceImpl implements ItemService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .price(request.getPrice())
+                .lowStockThreshold(request.getLowStockThreshold())
+                .stockQuantity(request.getStockQuantity())
                 .build();
 
     }
@@ -65,6 +119,8 @@ public class ItemServiceImpl implements ItemService {
                 .categoryId(newItem.getCategory().getCategoryId())
                 .createdAt(newItem.getCreatedAt())
                 .updatedAt(newItem.getUpdatedAt())
+                .lowStockThreshold(newItem.getLowStockThreshold())
+                .stockQuantity(newItem.getStockQuantity())
                 .build();
     }
 
@@ -88,4 +144,5 @@ public class ItemServiceImpl implements ItemService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to delete image");
         }
     }
+
 }

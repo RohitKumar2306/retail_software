@@ -24,5 +24,7 @@ public class ItemResponse {
     private String imgUrl;
     private Timestamp  createdAt;
     private Timestamp updatedAt;
+    private Integer stockQuantity;
+    private Integer lowStockThreshold;
 
 }
