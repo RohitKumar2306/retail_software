@@ -4,6 +4,7 @@ import com.ecom.retailsoftware.io.OrderRequest;
 import com.ecom.retailsoftware.io.OrderResponse;
 import com.ecom.retailsoftware.io.PaymentVerificationRequest;
 
+import com.ecom.retailsoftware.io.TopSellersResponse;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
@@ -26,4 +27,6 @@ public interface OrderService {
     List<OrderResponse> findRecentOrders();
 
     List<OrderResponse> getLatestOrdersForCustomer(String customerName);
+
+    List<TopSellersResponse> getTopSellers(int time);
 }

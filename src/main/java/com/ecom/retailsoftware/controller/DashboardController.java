@@ -1,9 +1,7 @@
 package com.ecom.retailsoftware.controller;
 
 
-import com.ecom.retailsoftware.io.DashboardResponse;
-import com.ecom.retailsoftware.io.ItemResponse;
-import com.ecom.retailsoftware.io.OrderResponse;
+import com.ecom.retailsoftware.io.*;
 import com.ecom.retailsoftware.service.ItemService;
 import com.ecom.retailsoftware.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +39,11 @@ public class DashboardController {
     @GetMapping("/outOfStock")
     public List<ItemResponse> getOutOfStockItems() {
         return itemService.getOutOfStockItems();
+    }
+
+    @GetMapping("/topSellers/{time}")
+    public List<TopSellersResponse> getTopSellers(@PathVariable int time) {
+        return orderService.getTopSellers(time);
     }
 
 

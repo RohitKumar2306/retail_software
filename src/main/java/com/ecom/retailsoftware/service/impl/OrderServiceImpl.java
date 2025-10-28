@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -167,6 +168,16 @@ public class OrderServiceImpl implements OrderService {
                 .stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TopSellersResponse> getTopSellers(int days) {
+        if (days <= 0) days = 7;
+
+        LocalDateTime since = LocalDate.now().minusDays(days).atStartOfDay();
+
+        return orderEntityRepository
+                .topCustomersSince(since, PaymentDetails.PaymentStatus.COMPLETED, PageRequest.of(0, 5));
     }
 
     private boolean verifyRazorpaySignature(String razorpayOrderId, String razorpayPaymentId, String razorpaySignature) {
