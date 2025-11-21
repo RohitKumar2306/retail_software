@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -18,8 +19,9 @@ public class ManageInventoryController {
 
     private final ItemService itemService;
 
-    @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping("/admin/update/{itemId}")
+    @PreAuthorize("hasAuthority('INVENTORY_ADJUST')")
+    @ResponseStatus(HttpStatus.OK)
+    @PostMapping("/update/{itemId}")
     public ItemResponse updateItem(@PathVariable String itemId,
                                    @RequestPart("item") String item) {
         ObjectMapper objectMapper = new ObjectMapper();

@@ -10,6 +10,8 @@ import com.ecom.retailsoftware.service.FileUploadService;
 import com.ecom.retailsoftware.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -43,39 +45,70 @@ public class ItemServiceImpl implements ItemService {
 
     }
 
-    @Override
     public ItemResponse update(ItemRequest request) {
-        // 1) Find existing item
         ItemEntity existing = itemRepository.findByItemId(request.getItemId())
-                .orElseThrow(() -> new RuntimeException("Item not found: " + request.getItemId()));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
 
-        // 2) Apply updates (only when provided)
-        if (request.getDescription() != null) {
-            existing.setDescription(request.getDescription());
-        }
-        if (request.getPrice() != null) {
+        // Who is calling?
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean canAdjustInventory = hasAuthority(auth, "INVENTORY_ADJUST");
+        boolean canChangePrice     = hasAuthority(auth, "PRICING_UPDATE");
+        boolean canEditMeta        = hasAuthority(auth, "ITEMS_WRITE"); // optional for name/desc/category
+
+        // PRICE – block if changed without PRICING_UPDATE
+        if (request.getPrice() != null && !request.getPrice().equals(existing.getPrice())) {
+            if (!canChangePrice) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to change price");
+            }
             existing.setPrice(request.getPrice());
         }
-        if (request.getLowStockThreshold() != null) {
-            existing.setLowStockThreshold(request.getLowStockThreshold());
-        }
-        if (request.getStockQuantity() != null) {
+
+        // STOCK – allow with INVENTORY_ADJUST
+        if (request.getStockQuantity() != null && !request.getStockQuantity().equals(existing.getStockQuantity())) {
+            if (!canAdjustInventory) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to adjust inventory");
+            }
             if (request.getStockQuantity() < 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stockQuantity must be >= 0");
             }
             existing.setStockQuantity(request.getStockQuantity());
         }
+
+        // LOW-STOCK THRESHOLD – treat as inventory config
+        if (request.getLowStockThreshold() != null
+                && !request.getLowStockThreshold().equals(existing.getLowStockThreshold())) {
+            if (!canAdjustInventory) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to change threshold");
+            }
+            existing.setLowStockThreshold(request.getLowStockThreshold());
+        }
+
+        // OPTIONAL: name/description/category behind ITEMS_WRITE (or MANAGER)
+        if (request.getName() != null && !request.getName().isBlank()) {
+            if (!canEditMeta) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to edit name");
+            existing.setName(request.getName());
+        }
+        if (request.getDescription() != null) {
+            if (!canEditMeta) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to edit description");
+            existing.setDescription(request.getDescription());
+        }
         if (request.getCategoryId() != null) {
-            CategoryEntity category = categoryRepository.findByCategoryId(request.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Category not found: " + request.getCategoryId()));
+            if (!canEditMeta) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to change category");
+            var category = categoryRepository.findByCategoryId(request.getCategoryId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category not found"));
             existing.setCategory(category);
         }
 
-        // 3) Persist
         existing = itemRepository.save(existing);
-
-        // 4) Map to response (your existing helper)
         return convertToResponse(existing);
+    }
+
+    private boolean hasAuthority(org.springframework.security.core.Authentication auth, String code) {
+        if (auth == null) return false;
+        for (GrantedAuthority ga : auth.getAuthorities()) {
+            if (ga.getAuthority().equals(code)) return true;
+        }
+        return false;
     }
 
     @Override
