@@ -49,4 +49,17 @@ public interface OrderEntityRepository extends JpaRepository<OrderEntity, Long> 
                                                Pageable pageable);
 
 
+    @Query("""
+      SELECT FUNCTION('date', o.createdAt) AS day, SUM(o.grandTotal) AS total
+      FROM OrderEntity o
+      WHERE o.userName = :username
+        AND o.paymentDetails.status = com.ecom.retailsoftware.io.PaymentDetails.PaymentStatus.COMPLETED
+        AND o.createdAt >= :since
+      GROUP BY FUNCTION('date', o.createdAt)
+      ORDER BY FUNCTION('date', o.createdAt) ASC
+    """)
+    List<Object[]> spendPerDaySince(@Param("username") String username,
+                                    @Param("since") LocalDateTime since);
+
+
 }
